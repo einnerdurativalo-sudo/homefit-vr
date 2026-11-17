@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0A1424">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>HomeFit VR</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Big+Shoulders+Display:wght@700;800&display=swap">
+<style>
+/* Layout: escena 3D a la izquierda con barra de control, panel lateral con clase, implementos, seguridad y progreso. */
+:root{
+  --bg:#F2F5F8; --surface:#FFFFFF; --ink:#0F1B2D; --muted:#55657B; --line:#D5DEE8;
+  --accent:#0B7F86; --accent-ink:#FFFFFF; --warn:#9A5B05; --ok:#1D7A4B; --stage:#0A1424; --chip:#E4ECF3;
+  --font-display:'Big Shoulders Display','Arial Narrow',Impact,sans-serif;
+  --font-body:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1220; --surface:#121C2E; --ink:#E8EEF6; --muted:#93A3BA; --line:#24344D;
+    --accent:#35C4C9; --accent-ink:#06222A; --warn:#F2B25C; --ok:#5BD08F; --chip:#1A2740; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1220; --surface:#121C2E; --ink:#E8EEF6; --muted:#93A3BA; --line:#24344D;
+  --accent:#35C4C9; --accent-ink:#06222A; --warn:#F2B25C; --ok:#5BD08F; --chip:#1A2740; color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--font-body);margin:0;
+  padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+h1{font:800 40px/1 var(--font-display);letter-spacing:.02em;text-transform:uppercase;margin:0;text-wrap:balance}
+.tag{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:var(--chip);color:var(--muted);padding:3px 8px;border-radius:4px}
+.lead{color:var(--muted);margin:0;max-width:62ch;flex-basis:100%}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px;align-items:start}
+@media (max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}}
+.stage{display:flex;flex-direction:column;gap:10px;min-width:0}
+.scene-wrap{position:relative;height:min(62vh,560px);min-height:340px;background:var(--stage);border-radius:6px;overflow:hidden}
+.scene-wrap a-scene{position:absolute;inset:0;width:100%;height:100%}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:600 14px/1 var(--font-body);cursor:pointer;border-radius:6px;padding:11px 16px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible+label,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.status{flex:1 1 220px;min-width:0;font-variant-numeric:tabular-nums;color:var(--muted)}
+.status b{color:var(--ink)}
+.quest{display:none;background:var(--chip);border-left:4px solid var(--accent);padding:10px 12px;border-radius:4px;font-size:14px}
+.quest.on{display:block}
+.note{font-size:13px;color:var(--muted);margin:0;max-width:80ch}
+aside.side{display:flex;flex-direction:column;gap:16px;min-width:0}
+section.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+h2{font:700 22px/1.1 var(--font-display);letter-spacing:.03em;text-transform:uppercase;margin:0}
+.cls{display:grid;gap:8px}
+.cls .opt{position:relative}
+.cls input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.cls label{display:block;border:1px solid var(--line);border-radius:6px;padding:10px 12px;cursor:pointer}
+.cls label b{display:block}
+.cls label span{color:var(--muted);font-size:13px}
+.cls input:checked+label{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--chip)}
+ul.items{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+ul.items li{display:grid;gap:2px;border-left:3px solid var(--accent);padding-left:10px}
+ul.items small{color:var(--muted);font-size:13px}
+.chk{display:grid;gap:8px}
+.chk label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:14px}
+.chk input{margin-top:3px;width:18px;height:18px;accent-color:var(--accent);flex:none}
+.meta{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-variant-numeric:tabular-nums;font-size:14px}
+.meta dt{color:var(--muted)} .meta dd{margin:0;font-weight:600;text-align:right}
+.pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;background:var(--chip)}
+.pill.ok{color:var(--ok)} .pill.warn{color:var(--warn)}
+#summary{position:absolute;inset:0;background:rgba(6,12,24,.92);color:#E8EEF6;display:flex;align-items:center;justify-content:center;padding:16px}
+#summary[hidden]{display:none}
+#summary .box{max-width:460px;width:100%;display:flex;flex-direction:column;gap:12px}
+#summary h3{font:800 34px/1 var(--font-display);text-transform:uppercase;margin:0}
+#summary input[type=range]{width:100%;accent-color:#35C4C9}
+#summary button{background:#35C4C9;color:#06222A;border-color:#35C4C9}
+.borg{font-variant-numeric:tabular-nums}
+details{font-size:13px;color:var(--muted)} details summary{cursor:pointer;color:var(--ink);font-weight:600}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>HomeFit VR</h1><span class="tag">Prototipo alfa</span>
+    <p class="lead">Clases de gimnasio en realidad virtual que se hacen en casa con una mochila, botellas de agua, una silla, una toalla o una escoba. Sin máquinas.</p>
+  </header>
+
+  <div class="grid">
+    <div class="stage">
+      <div class="scene-wrap" id="sceneWrap">
+        <a-scene id="scene" embedded homefit background="color:#0a1424" light="defaultLightsEnabled:false" vr-mode-ui="enabled:false" device-orientation-permission-ui="enabled:false" loading-screen="enabled:false" renderer="antialias:true; foveationLevel:2; highRefreshRate:true" webxr="optionalFeatures: bounded-floor, hand-tracking">
+          <a-entity id="rig"><a-entity id="cam" camera look-controls="touchEnabled:true" position="0 1.6 0"></a-entity></a-entity>
+        </a-scene>
+        <div id="summary" hidden></div>
+      </div>
+      <p class="quest" id="questTip"><b>Meta Quest detectado.</b> Despeja tu zona, pulsa <b>Entrar en RV</b> y usa el rayo de los controles (o el gesto de pellizco con las manos) para elegir la clase en el menú que aparece frente a ti.</p>
+      <div class="bar">
+        <button class="primary" id="btnStart" disabled>Iniciar clase</button>
+        <button id="btnPause" disabled>Pausar</button>
+        <button id="btnVR" hidden>Entrar en RV</button>
+        <button id="btnRep" disabled title="Para probar sin visor: suma una repetición (Espacio)">+1 repetición (prueba)</button>
+        <div class="status" id="status" aria-live="polite">Elige una clase y confirma la lista de seguridad.</div>
+      </div>
+      <p class="note"><label><input type="checkbox" id="demo"> Modo demo rápido (ejercicios de 8 s) para ver la clase completa en un minuto</label></p>
+      <p class="note">Arrastra la escena para mirar alrededor. En un visor (por ejemplo Meta Quest) abre este enlace en su navegador y pulsa Entrar en RV; el gatillo pausa y reanuda. La animación del instructor es simplificada. El conteo de repeticiones por la altura de la cabeza y los controles es experimental y está pendiente de validar con el piloto.</p>
+    </div>
+
+    <aside class="side">
+      <section class="card">
+        <h2>1. Elige tu clase</h2>
+        <div class="cls" id="classList" role="radiogroup" aria-label="Clases"></div>
+      </section>
+      <section class="card">
+        <h2>2. Implementos de tu casa</h2>
+        <ul class="items" id="itemList"></ul>
+      </section>
+      <section class="card">
+        <h2>3. Seguridad</h2>
+        <div class="chk" id="safety">
+          <label><input type="checkbox"> Tengo un espacio libre de 2 × 2 m, sin mesas ni objetos frágiles.</label>
+          <label><input type="checkbox"> Uso calzado cerrado y el piso no resbala.</label>
+          <label><input type="checkbox"> Tengo agua cerca y me siento bien hoy (sin dolor, mareo ni fiebre).</label>
+          <label><input type="checkbox"> Ninguna pregunta de salud me impide ejercitarme; si dudo, consulto a un profesional antes.</label>
+          <label><input type="checkbox"> Pararé la clase si siento dolor, mareo o náuseas.</label>
+        </div>
+      </section>
+      <section class="card">
+        <h2>Tu progreso</h2>
+        <dl class="meta" id="progress"></dl>
+        <details><summary>Sobre este panel</summary>
+          <p>Guarda tus sesiones solo en este navegador. La recomendación y el riesgo de abandono usan reglas simples de ejemplo (días sin asistir) que representan la futura capa de analítica del proyecto.</p></details>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<script src="vendor/aframe-v1.6.0.min.js"></script>
+<script>
+(function(){
+'use strict';
+var THREE=AFRAME.THREE;
+var $=function(s){return document.querySelector(s)};
+
+/* ---------- Datos: implementos, ejercicios y clases ---------- */
+var ITEMS={
+  mochila:{name:'Mochila cargada',how:'Mochila con libros o botellas hasta unos 3 a 6 kg. Ajusta para llegar a 12 repeticiones con buena técnica.'},
+  botellas:{name:'Dos botellas de agua',how:'Botellas de 1,5 L llenas (cerca de 1,5 kg cada una) o dos garrafas pequeñas.'},
+  silla:{name:'Silla firme',how:'Sin ruedas, apoyada contra una pared para que no se deslice.'},
+  toalla:{name:'Toalla',how:'Toalla de mano o de baño, doblada a lo largo.'},
+  escoba:{name:'Escoba o palo de trapero',how:'Sin el cepillo si estorba; sirve cualquier palo liviano.'}
+};
+var D={lf:0,rf:0,la:8,ra:8,le:8,re:8,lh:0,rh:0,lha:3,rha:3,lk:0,rk:0,lean:0,side:0,twist:0,lift:0,back:0};
+var KEYS=Object.keys(D);
+function mix(o,p){return Object.assign({},D,o,p||{})}
+function arms(f,a,e){return {lf:f,rf:f,la:a,ra:a,le:e,re:e}}
+function legs(h,k){return {lh:h,rh:h,lk:k,rk:k}}
+var EX={
+  circulos:{name:'Círculos de brazos',cue:'Brazos abiertos, círculos amplios.',t:3,A:mix(arms(-25,90,5)),B:mix(arms(45,90,5))},
+  marcha:{name:'Marcha en el sitio',cue:'Rodillas a media altura, brazos al compás.',t:1.5,alt:1,A:mix({lf:-25,rf:25,le:80,re:80}),B:mix({lh:75,lk:85,lf:25,rf:-25,le:80,re:80})},
+  rotacion:{name:'Rotación de torso',cue:'Manos al pecho, gira sin mover las caderas.',t:3.2,A:mix(Object.assign(arms(80,0,100),legs(8,14),{twist:-40})),B:mix(Object.assign(arms(80,0,100),legs(8,14),{twist:40}))},
+  respiracion:{name:'Respiración y estiramiento',cue:'Inhala al subir los brazos, exhala al bajar.',t:6,A:mix(arms(0,10,8)),B:mix(arms(0,110,10))},
+  sentadilla_mochila:{name:'Sentadilla con mochila',cue:'Mochila al pecho, cadera atrás, rodillas sobre los pies.',t:4,prop:'mochila',track:'squat',
+    A:mix(arms(65,0,125)),B:mix(Object.assign(arms(75,0,110),legs(82,108),{lean:22,back:.12}))},
+  remo_mochila:{name:'Remo con mochila',cue:'Espalda recta; lleva los codos hacia atrás.',t:3.4,prop:'mochila',
+    A:mix(Object.assign(arms(0,0,5),legs(30,40),{lean:55,back:.2})),B:mix(Object.assign(arms(-50,0,95),legs(30,40),{lean:55,back:.2}))},
+  press_botellas:{name:'Press de hombros con botellas',cue:'Empuja sobre la cabeza sin arquear la espalda.',t:3.6,prop:'botellas',track:'hands',
+    A:mix(Object.assign(arms(0,35,140),legs(6,10))),B:mix(Object.assign(arms(0,165,10),legs(6,10)))},
+  rdl_mochila:{name:'Bisagra de cadera con mochila',cue:'Espalda neutra; la mochila baja cerca de las piernas.',t:4,prop:'mochila',
+    A:mix(Object.assign(arms(0,0,3),{lean:4})),B:mix(Object.assign(arms(0,0,3),legs(18,22),{lean:68,back:.25}))},
+  jack:{name:'Jack sin salto',cue:'Abre brazos y piernas con pasos laterales, sin saltar.',t:1.2,A:mix(arms(0,8,8)),B:mix(Object.assign(arms(0,165,8),{lha:24,rha:24}))},
+  rodillas:{name:'Rodillas altas',cue:'Sube la rodilla a la cadera, abdomen firme.',t:1.1,alt:1,A:mix({lf:30,rf:-30,le:90,re:90}),B:mix({lh:95,lk:95,lf:-30,rf:30,le:90,re:90})},
+  boxeo:{name:'Boxeo de sombra',cue:'Guardia arriba, golpes rectos al frente.',t:1.2,alt:1,A:mix(Object.assign(arms(60,0,110),legs(14,18))),B:mix({lf:88,le:5,rf:55,re:120,twist:-20,lh:14,rh:14,lk:18,rk:18})},
+  talones:{name:'Talones al glúteo',cue:'Lleva el talón al glúteo alternando piernas.',t:1.3,alt:1,A:mix({lf:30,rf:-30,le:70,re:70}),B:mix({lk:110,lf:-30,rf:30,le:70,re:70})},
+  sent_silla:{name:'Sentadilla a la silla',cue:'Roza la silla con los glúteos y levántate sin impulso.',t:4,track:'squat',
+    A:mix(arms(88,0,3)),B:mix(Object.assign(arms(88,0,3),legs(82,108),{lean:28,back:.22}))},
+  rodilla_codo:{name:'Rodilla al codo',cue:'Acerca el codo a la rodilla contraria, alterna.',t:2.4,alt:1,
+    A:mix(arms(0,150,20)),B:mix({lh:95,lk:100,lean:25,twist:18,lf:35,rf:35,le:110,re:110})},
+  lenador:{name:'Leñador con mochila',cue:'De arriba a la cadera en diagonal, alterna lados.',t:3.2,alt:1,prop:'mochila',
+    A:mix(Object.assign(arms(165,0,8),{twist:-30})),B:mix(Object.assign(arms(30,0,8),legs(30,40),{lean:50,twist:30,back:.12}))},
+  talones_silla:{name:'Elevación de talones',cue:'Sube de puntas con una mano en la silla.',t:2.2,
+    A:mix({lf:45,le:40,ra:35,re:120}),B:mix({lf:45,le:40,ra:35,re:120,lift:.09})},
+  escoba_pase:{name:'Pase de hombros con escoba',cue:'Agarre ancho, pasa la escoba de frente hacia atrás.',t:5,prop:'escoba',
+    A:mix(arms(95,0,3)),B:mix(arms(215,0,3))},
+  lateral_escoba:{name:'Inclinación lateral con escoba',cue:'Escoba arriba, inclínate sin girar el torso.',t:4.4,alt:1,prop:'escoba',
+    A:mix(arms(180,0,3)),B:mix(Object.assign(arms(180,0,3),{side:25}))},
+  toalla_apertura:{name:'Apertura de pecho con toalla',cue:'Toalla tensa; ábrela hacia atrás sin arquear.',t:4.2,prop:'toalla',
+    A:mix(arms(90,0,5)),B:mix(arms(200,0,5))},
+  flexion_resp:{name:'Inclinación y respiración',cue:'Cae despacio al frente y sube con los brazos arriba.',t:7,
+    A:mix(Object.assign(arms(0,0,5),legs(10,15),{lean:78,back:.2})),B:mix(arms(0,170,5))}
+};
+var CLASSES=[
+  {id:'fuerza',name:'Fuerza con mochila y botellas',focus:'Piernas, espalda y hombros.',level:'Principiante a intermedio',items:['mochila','botellas'],
+   warm:['circulos','marcha','rotacion'],main:['sentadilla_mochila','remo_mochila','press_botellas','rdl_mochila'],cool:['respiracion'],rounds:3,work:40,rest:20},
+  {id:'cardio',name:'Cardio de bajo impacto',focus:'Corazón y resistencia, solo con tu cuerpo.',level:'Todos los niveles',items:[],
+   warm:['circulos','marcha','rotacion'],main:['jack','rodillas','boxeo','talones'],cool:['respiracion'],rounds:3,work:40,rest:20},
+  {id:'core',name:'Core y silla',focus:'Abdomen, glúteos y equilibrio.',level:'Principiante a intermedio',items:['silla','mochila'],
+   warm:['circulos','marcha','rotacion'],main:['sent_silla','rodilla_codo','lenador','talones_silla'],cool:['respiracion'],rounds:3,work:40,rest:20},
+  {id:'movilidad',name:'Movilidad con toalla y escoba',focus:'Hombros, columna y flexibilidad.',level:'Todos los niveles',items:['escoba','toalla'],
+   warm:['marcha'],main:['escoba_pase','lateral_escoba','toalla_apertura','flexion_resp'],cool:['respiracion'],rounds:2,work:45,rest:15}
+];
+function buildTimeline(c,demo){
+  var W=demo?5:30,K=demo?8:c.work,R=demo?3:c.rest,C=demo?5:40,seg=[];
+  c.warm.forEach(function(e){seg.push({type:'warm',ex:e,dur:W})});
+  for(var r=1;r<=c.rounds;r++){c.main.forEach(function(e,i){
+    seg.push({type:'work',ex:e,dur:K,round:r});
+    if(!(r===c.rounds&&i===c.main.length-1))seg.push({type:'rest',ex:null,dur:R,round:r});
+  })}
+  c.cool.forEach(function(e){seg.push({type:'cool',ex:e,dur:C})});
+  seg.forEach(function(s,i){ if(s.type==='rest'){for(var j=i+1;j<seg.length;j++){if(seg[j].type!=='rest'){s.next=seg[j].ex;break}}} });
+  return seg;
+}
+
+/* ---------- Estado ---------- */
+var S={inVR:false,cls:CLASSES[0],tl:[],i:0,segT:0,state:'idle',cd:0,t:0,safe:false,demo:false,
+  reps:0,repsSeg:0,repsByEx:{},stand:1.6,sq:'up',hs:'down',elapsed:0,hudAcc:0,domAcc:0,lastBeep:-1,startedAt:0};
+function curSeg(){return S.tl[S.i]}
+function fmt(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2)}
+function store(){try{return JSON.parse(localStorage.getItem('homefitvr.sessions')||'[]')}catch(e){return []}}
+function save(a){try{localStorage.setItem('homefitvr.sessions',JSON.stringify(a))}catch(e){}}
+var ac;function beep(f,d){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();var o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f||880;g.gain.value=.05;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+(d||.12))}catch(e){}}
+
+/* ---------- Pose y avatar ---------- */
+function mirror(p){var q=Object.assign({},p);[['lf','rf'],['la','ra'],['le','re'],['lh','rh'],['lha','rha'],['lk','rk']].forEach(function(x){q[x[0]]=p[x[1]];q[x[1]]=p[x[0]]});q.twist=-p.twist;q.side=-p.side;return q}
+function poseAt(ex,time){
+  var per=ex.t,c=Math.floor(time/per),ph=(time%per)/per,s=.5-.5*Math.cos(2*Math.PI*ph),A=ex.A,B=ex.B;
+  if(ex.alt&&c%2===1){A=mirror(A);B=mirror(B)}
+  var p={};KEYS.forEach(function(k){p[k]=A[k]+(B[k]-A[k])*s});return {pose:p,cycle:c};
+}
+function idlePose(t){return mix({lean:1.5*Math.sin(t*1.6),la:9+3*Math.sin(t*1.6),ra:9+3*Math.sin(t*1.6)})}
+var R=function(d){return d*Math.PI/180};
+function mat(c,o){return new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.75,metalness:0},o||{}))}
+function buildAvatar(){
+  var skin=mat(0xd9a47e),shirt=mat(0x1f8a96),pants=mat(0x1d2b45),shoe=mat(0xeaeef3);
+  var root=new THREE.Group(),av={root:root};
+  root.add(new THREE.Mesh(new THREE.BoxGeometry(.3,.16,.17),pants));
+  var torso=new THREE.Group();torso.rotation.order='YXZ';root.add(torso);av.torso=torso;
+  var tb=new THREE.Mesh(new THREE.BoxGeometry(.36,.56,.19),shirt);tb.position.y=.3;torso.add(tb);
+  var nk=new THREE.Mesh(new THREE.CylinderGeometry(.045,.05,.08,10),skin);nk.position.y=.62;torso.add(nk);
+  var hd=new THREE.Mesh(new THREE.SphereGeometry(.11,20,16),skin);hd.position.y=.74;torso.add(hd);
+  function seg(parent,len,r,m,y){var g=new THREE.Group();g.position.y=y||0;parent.add(g);var mesh=new THREE.Mesh(new THREE.CylinderGeometry(r,r*.88,len,10),m);mesh.position.y=-len/2;g.add(mesh);return g}
+  function arm(sg){
+    var sh=new THREE.Group();sh.position.set(sg*.23,.53,0);sh.rotation.order='ZXY';torso.add(sh);
+    var m=new THREE.Mesh(new THREE.CylinderGeometry(.048,.042,.3,10),shirt);m.position.y=-.15;sh.add(m);
+    var el=new THREE.Group();el.position.y=-.3;sh.add(el);
+    var f=new THREE.Mesh(new THREE.CylinderGeometry(.04,.034,.28,10),skin);f.position.y=-.14;el.add(f);
+    var h=new THREE.Mesh(new THREE.SphereGeometry(.05,12,10),skin);h.position.y=-.29;el.add(h);
+    var mount=new THREE.Group();mount.position.y=-.3;el.add(mount);
+    return {sh:sh,el:el,mount:mount};
+  }
+  function leg(sg){
+    var hip=new THREE.Group();hip.position.set(sg*.1,0,0);hip.rotation.order='ZXY';root.add(hip);
+    var th=new THREE.Mesh(new THREE.CylinderGeometry(.075,.062,.45,10),pants);th.position.y=-.225;hip.add(th);
+    var kn=new THREE.Group();kn.position.y=-.45;hip.add(kn);
+    var sn=new THREE.Mesh(new THREE.CylinderGeometry(.06,.045,.45,10),pants);sn.position.y=-.225;kn.add(sn);
+    var ft=new THREE.Mesh(new THREE.BoxGeometry(.1,.07,.24),shoe);ft.position.set(0,-.47,.05);kn.add(ft);
+    return {hip:hip,kn:kn};
+  }
+  av.L=arm(1);av.R=arm(-1);av.lg=leg(1);av.rg=leg(-1);
+  /* implementos: se sujetan en el punto medio entre las manos */
+  var props={};
+  var bag=new THREE.Group();bag.position.set(-.23,-.02,.0);
+  bag.add(new THREE.Mesh(new THREE.BoxGeometry(.3,.4,.16),mat(0xe0623a)));
+  var pk=new THREE.Mesh(new THREE.BoxGeometry(.22,.16,.05),mat(0xb94a28));pk.position.set(0,-.06,.1);bag.add(pk);
+  props.mochila=[[av.L.mount,bag]];
+  function bottle(){var g=new THREE.Group();g.add(new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.26,12),mat(0x5fb7e8,{transparent:true,opacity:.8})));var cap=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.04,8),mat(0xffffff));cap.position.y=.15;g.add(cap);return g}
+  props.botellas=[[av.L.mount,bottle()],[av.R.mount,bottle()]];
+  var broom=new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,1.3,8),mat(0xc59a5a));broom.rotation.z=Math.PI/2;broom.position.set(-.23,0,0);
+  props.escoba=[[av.L.mount,broom]];
+  var towel=new THREE.Mesh(new THREE.BoxGeometry(.9,.012,.16),mat(0x35c4c9));towel.position.set(-.23,0,0);
+  props.toalla=[[av.L.mount,towel]];
+  Object.keys(props).forEach(function(k){props[k].forEach(function(p){p[0].add(p[1]);p[1].visible=false})});
+  av.props=props;return av;
+}
+function showProp(av,name){Object.keys(av.props).forEach(function(k){av.props[k].forEach(function(p){p[1].visible=(k===name)})})}
+function applyPose(av,p){
+  av.torso.rotation.set(R(p.lean),R(p.twist),R(p.side));
+  av.L.sh.rotation.set(R(-p.lf-p.lean),0,R(p.la));av.R.sh.rotation.set(R(-p.rf-p.lean),0,R(-p.ra));
+  av.L.el.rotation.x=R(-p.le);av.R.el.rotation.x=R(-p.re);
+  av.lg.hip.rotation.set(R(-p.lh),0,R(p.lha));av.rg.hip.rotation.set(R(-p.rh),0,R(-p.rha));
+  av.lg.kn.rotation.x=R(p.lk);av.rg.kn.rotation.x=R(p.rk);
+  var hl=(.45*Math.cos(R(p.lh))+.45*Math.cos(R(p.lh-p.lk)))*Math.cos(R(p.lha));
+  var hr=(.45*Math.cos(R(p.rh))+.45*Math.cos(R(p.rh-p.rk)))*Math.cos(R(p.rha));
+  av.root.position.y=.05+Math.max(hl,hr)+p.lift;av.root.position.z=-2.35-p.back;
+}
+
+/* ---------- Paneles dibujados en canvas (HUD) ---------- */
+function makePanel(w,h,cw,ch){
+  var cv=document.createElement('canvas');cv.width=cw;cv.height=ch;
+  var tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;
+  var mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true,toneMapped:false}));
+  return {cv:cv,ctx:cv.getContext('2d'),tex:tex,mesh:mesh,w:cw,h:ch};
+}
+var FONT='"Archivo",system-ui,sans-serif',DISP='"Big Shoulders Display","Arial Narrow",Impact,sans-serif';
+function rrect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function wrap(c,text,x,y,maxW,lh,maxLines){var words=text.split(' '),line='',n=0;for(var i=0;i<words.length;i++){var t=line?line+' '+words[i]:words[i];if(c.measureText(t).width>maxW&&line){c.fillText(line,x,y);y+=lh;line=words[i];if(++n>=maxLines-1&&maxLines)break}else line=t}c.fillText(line,x,y);return y+lh}
+function bg(p){var c=p.ctx;c.clearRect(0,0,p.w,p.h);c.fillStyle='rgba(7,15,29,.9)';rrect(c,6,6,p.w-12,p.h-12,28);c.fill();c.lineWidth=4;c.strokeStyle='#1f8a96';c.stroke()}
+var PHASE={warm:['CALENTAMIENTO','#8ab4ff'],work:['TRABAJO','#2fd0c0'],rest:['DESCANSO','#f2b25c'],cool:['ENFRIAMIENTO','#8ab4ff']};
+function drawMain(p){
+  var c=p.ctx;bg(p);c.textBaseline='alphabetic';
+  var seg=curSeg(),ex=seg&&seg.ex?EX[seg.ex]:null;
+  if(S.state==='idle'){
+    c.fillStyle='#8ea3bd';c.font='600 30px '+FONT;c.fillText('VISTA PREVIA',48,80);
+    c.fillStyle='#fff';var tf=84;c.font='800 '+tf+'px '+DISP;while(c.measureText(S.cls.name.toUpperCase()).width>p.w-96&&tf>36){tf-=4;c.font='800 '+tf+'px '+DISP}c.fillText(S.cls.name.toUpperCase(),48,170);
+    c.fillStyle='#cfe0f2';c.font='500 34px '+FONT;c.fillText(S.preview?'Ahora: '+S.preview:'',48,235);
+    c.fillStyle=S.safe?'#2fd0c0':'#f2b25c';c.font='600 34px '+FONT;
+    wrap(c,S.inVR?'Elige la clase y confirma la seguridad en el menú frente a ti.':(S.safe?'Pulsa Iniciar clase en la página.':'Confirma la lista de seguridad en la página para empezar.'),48,320,p.w-96,44,3);
+    c.fillStyle='#8ea3bd';c.font='500 28px '+FONT;c.fillText('Duración: '+fmt(S.total)+'  ·  '+S.cls.level,48,p.h-50);
+  }else if(S.state==='countdown'){
+    c.fillStyle='#8ea3bd';c.font='600 34px '+FONT;c.textAlign='center';c.fillText('PÁRATE RECTO Y MIRA AL FRENTE',p.w/2,110);
+    c.fillStyle='#fff';c.font='800 300px '+DISP;c.fillText(String(Math.max(1,Math.ceil(S.cd))),p.w/2,400);c.textAlign='left';
+  }else if(S.state==='done'){
+    c.fillStyle='#2fd0c0';var df=110;c.font='800 '+df+'px '+DISP;while(c.measureText('CLASE COMPLETA').width>p.w-96&&df>50){df-=4;c.font='800 '+df+'px '+DISP}c.fillText('CLASE COMPLETA',48,170);
+    c.fillStyle='#fff';c.font='500 38px '+FONT;c.fillText('Tiempo: '+fmt(S.elapsed)+'   ·   Repeticiones contadas: '+S.reps,48,260);
+    c.fillStyle='#cfe0f2';c.font='500 32px '+FONT;c.fillText(S.inVR?'Registra tu esfuerzo en el menú.':'Registra tu esfuerzo en la página.',48,320);
+  }else if(seg){
+    var ph=PHASE[seg.type];
+    c.fillStyle=ph[1];rrect(c,48,40,300,52,10);c.fill();c.fillStyle='#07101d';c.font='700 30px '+FONT;c.fillText(ph[0]+(S.state==='paused'?' · PAUSA':''),64,77);
+    if(seg.round){c.fillStyle='#8ea3bd';c.font='600 30px '+FONT;c.fillText('Ronda '+seg.round+' de '+S.cls.rounds,370,77)}
+    var name=ex?ex.name:'Descansa y respira',cue=ex?ex.cue:'Sigue: '+EX[seg.next].name;
+    c.fillStyle='#fff';var fs=84;c.font='800 '+fs+'px '+DISP;while(c.measureText(name.toUpperCase()).width>600&&fs>40){fs-=4;c.font='800 '+fs+'px '+DISP}
+    c.fillText(name.toUpperCase(),48,190);
+    c.fillStyle='#cfe0f2';c.font='500 32px '+FONT;wrap(c,cue,48,252,600,42,3);
+    // anillo de tiempo
+    var cx=830,cy=230,rr=120,left=seg.dur-S.segT;
+    c.lineWidth=18;c.strokeStyle='#1a2a44';c.beginPath();c.arc(cx,cy,rr,0,Math.PI*2);c.stroke();
+    c.strokeStyle=ph[1];c.lineCap='round';c.beginPath();c.arc(cx,cy,rr,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,S.segT/seg.dur));c.stroke();
+    c.fillStyle='#fff';c.font='800 120px '+DISP;c.textAlign='center';c.fillText(String(Math.max(0,Math.ceil(left))),cx,cy+40);c.font='500 24px '+FONT;c.fillStyle='#8ea3bd';c.fillText('segundos',cx,cy+78);c.textAlign='left';
+    // repeticiones
+    c.fillStyle='#8ea3bd';c.font='600 28px '+FONT;
+    if(seg.type!=='rest'&&ex){c.fillText('Ritmo del instructor',48,380);c.fillStyle='#fff';c.font='800 76px '+DISP;c.fillText(String(Math.floor(S.segT/ex.t)),48,450);
+      c.fillStyle='#8ea3bd';c.font='600 28px '+FONT;c.fillText(ex.track?'Tus repeticiones':'Seguimiento',300,380);c.fillStyle=ex.track?'#2fd0c0':'#8ea3bd';c.font='800 76px '+DISP;c.fillText(ex.track?String(S.repsSeg):'—',300,450)}
+    else{c.fillText('Tiempo restante de la clase: '+fmt(S.total-S.elapsed),48,420)}
+    // progreso
+    c.fillStyle='#1a2a44';rrect(c,48,p.h-70,p.w-96,16,8);c.fill();c.fillStyle='#2fd0c0';rrect(c,48,p.h-70,Math.max(16,(p.w-96)*Math.min(1,S.elapsed/S.total)),16,8);c.fill();
+    c.fillStyle='#8ea3bd';c.font='500 24px '+FONT;c.fillText(fmt(S.elapsed)+' / '+fmt(S.total),48,p.h-24);
+  }
+  p.tex.needsUpdate=true;
+}
+function drawCoach(p){
+  var c=p.ctx;bg(p);var cl=S.cls;
+  c.fillStyle='#8ea3bd';c.font='600 26px '+FONT;c.fillText('TU CLASE',40,70);
+  c.fillStyle='#fff';var cf=52;c.font='800 '+cf+'px '+DISP;while(c.measureText(cl.name.toUpperCase()).width>p.w-80&&cf>28){cf-=2;c.font='800 '+cf+'px '+DISP}c.fillText(cl.name.toUpperCase(),40,130);
+  c.fillStyle='#2fd0c0';c.font='700 28px '+FONT;c.fillText('IMPLEMENTOS',40,200);
+  c.fillStyle='#fff';c.font='500 30px '+FONT;var y=244;
+  if(!cl.items.length){c.fillText('Solo tu cuerpo y calzado cerrado.',40,y);y+=44}
+  cl.items.forEach(function(k){y=wrap(c,'• '+ITEMS[k].name,40,y,p.w-80,40,2)});
+  y+=14;c.fillStyle='#f2b25c';c.font='700 28px '+FONT;c.fillText('SEGURIDAD',40,y);y+=44;c.fillStyle='#cfe0f2';c.font='500 28px '+FONT;
+  ['Zona libre de 2 × 2 m.','Para si hay dolor o mareo.','Gatillo: pausar o reanudar.'].forEach(function(t){c.fillText('• '+t,40,y);y+=38});
+  p.tex.needsUpdate=true;
+}
+
+
+/* ---------- Menú dentro de la RV (rayo de controles o manos) ---------- */
+var M={rects:[],hover:null,borg:13,dirty:true,show:false};
+M.pick=function(x,y){for(var i=0;i<M.rects.length;i++){var r=M.rects[i];if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)return r.id}return null};
+function drawMenu(p){
+  var c=p.ctx,W=p.w;bg(p);M.rects=[];c.textBaseline='alphabetic';c.textAlign='left';
+  function B(id,x,y,w,h,title,sub,o){o=o||{};var dis=o.disabled,hov=(M.hover===id&&!dis);
+    c.fillStyle=dis?'#16233a':o.on?'#1d5963':hov?'#244266':'#142238';rrect(c,x,y,w,h,18);c.fill();
+    c.lineWidth=hov?6:3;c.strokeStyle=hov?'#ffffff':o.on?'#2fd0c0':'#2a3f60';c.stroke();
+    var tx=x+(o.box?84:24);
+    if(o.box){c.strokeStyle=dis?'#46556b':'#8ea3bd';c.lineWidth=4;rrect(c,x+24,y+h/2-20,40,40,8);c.stroke();
+      if(o.checked){c.strokeStyle='#2fd0c0';c.lineWidth=7;c.beginPath();c.moveTo(x+33,y+h/2);c.lineTo(x+43,y+h/2+11);c.lineTo(x+58,y+h/2-12);c.stroke()}}
+    c.fillStyle=dis?'#5b6b82':'#fff';var fs=o.fs||34;c.font='700 '+fs+'px '+FONT;
+    while(c.measureText(title).width>w-(tx-x)-20&&fs>20){fs-=2;c.font='700 '+fs+'px '+FONT}
+    c.textAlign=o.center?'center':'left';var cx=o.center?x+w/2:tx;
+    c.fillText(title,cx,y+(sub?h/2-4:h/2+fs/3));
+    if(sub){c.fillStyle=dis?'#46556b':'#9fb3cc';c.font='500 25px '+FONT;wrap(c,sub,cx,y+h/2+30,w-(tx-x)-20,28,2)}
+    c.textAlign='left';if(!dis)M.rects.push({id:id,x:x,y:y,w:w,h:h});
+  }
+  function T(t,y,fs){c.fillStyle='#fff';c.font='800 '+(fs||64)+'px '+DISP;c.fillText(t,48,y)}
+  if(S.state==='idle'){
+    T('ELIGE TU CLASE',84);
+    CLASSES.forEach(function(cl,i){var x=40+(i%2)*476,y=104+Math.floor(i/2)*134;
+      B('cls:'+cl.id,x,y,448,120,cl.name,'≈ '+Math.round(buildTimeline(cl,false).reduce(function(a,s){return a+s.dur},0)/60)+' min · '+(cl.items.length?cl.items.map(function(k){return ITEMS[k].name.toLowerCase()}).join(', '):'solo tu cuerpo'),{on:S.cls.id===cl.id,fs:30})});
+    B('safe',40,376,944,100,'Confirmo la seguridad','Espacio libre de 2 × 2 m, calzado cerrado, me siento bien; paro si hay dolor o mareo.',{box:1,checked:S.safe,on:S.safe,fs:32});
+    B('demo',40,492,320,104,'Demo rápido','Ejercicios de 8 s',{box:1,checked:S.demo,fs:30});
+    B('start',376,492,608,104,'INICIAR CLASE',S.safe?'Duración '+fmt(S.total):'Confirma la seguridad para empezar',{disabled:!S.safe,center:1,fs:44,on:S.safe});
+  }else if(S.state==='paused'){
+    T('EN PAUSA',84);
+    B('resume',40,130,944,170,'REANUDAR','Sigue donde lo dejaste',{center:1,fs:56,on:1});
+    B('end',40,330,944,130,'TERMINAR CLASE','Vuelve al menú sin guardar',{center:1,fs:40});
+    c.fillStyle='#8ea3bd';c.font='500 28px '+FONT;c.fillText('Tiempo: '+fmt(S.elapsed)+' · Repeticiones contadas: '+S.reps,48,550);
+  }else if(S.state==='done'){
+    T('CLASE COMPLETA',84);
+    c.fillStyle='#cfe0f2';c.font='500 34px '+FONT;c.fillText('Tiempo '+fmt(S.elapsed)+' · '+S.reps+' repeticiones contadas',48,140);
+    c.fillStyle='#fff';c.font='600 32px '+FONT;c.fillText('¿Qué tan duro fue? Escala de Borg (6 a 20)',48,224);
+    [7,9,11,13,15,17,19].forEach(function(v,i){B('borg:'+v,40+i*130,250,116,100,String(v),null,{on:M.borg===v,center:1,fs:44})});
+    c.fillStyle='#8ea3bd';c.font='500 26px '+FONT;c.fillText('7 muy suave · 13 algo duro · 19 máximo esfuerzo',48,388);
+    B('save',40,430,944,150,'GUARDAR SESIÓN','Se guarda en este navegador',{center:1,fs:52,on:1});
+  }
+  p.tex.needsUpdate=true;
+}
+function act(id){
+  beep(700,.04);
+  if(id.indexOf('cls:')===0){var cid=id.slice(4),r=document.getElementById('cls-'+cid);if(r)r.checked=true;setClass(cid)}
+  else if(id==='safe'){var v=!safeOK();document.querySelectorAll('#safety input').forEach(function(i){i.checked=v});HFsync()}
+  else if(id==='demo'){var d=$('#demo');d.checked=!d.checked;S.demo=d.checked;resetClass()}
+  else if(id==='start'){HFstart()}
+  else if(id==='resume'){HFpause()}
+  else if(id==='end'){resetClass()}
+  else if(id.indexOf('borg:')===0){M.borg=+id.slice(5)}
+  else if(id==='save'){saveSession(M.borg)}
+  M.dirty=true;
+}
+window.HFselectXR=function(c){
+  if(M.show){var id=c&&c.userData&&c.userData.hover;if(id)act(id);return}
+  if(S.state==='running'||S.state==='paused')HFpause();
+};
+
+/* ---------- Componente principal de la escena ---------- */
+AFRAME.registerComponent('homefit',{
+  init:function(){
+    var sc=this.el,self=this;this.v=new THREE.Vector3();
+    var o=sc.object3D;
+    o.add(new THREE.AmbientLight(0xffffff,.9));var dl=new THREE.DirectionalLight(0xffffff,1.0);dl.position.set(2,4,2);o.add(dl);
+    // piso con cuadrícula
+    var g=document.createElement('canvas');g.width=g.height=512;var x=g.getContext('2d');x.fillStyle='#11203a';x.fillRect(0,0,512,512);x.strokeStyle='#1d3358';x.lineWidth=2;for(var i=0;i<=512;i+=64){x.beginPath();x.moveTo(i,0);x.lineTo(i,512);x.stroke();x.beginPath();x.moveTo(0,i);x.lineTo(512,i);x.stroke()}
+    var gt=new THREE.CanvasTexture(g);gt.wrapS=gt.wrapT=THREE.RepeatWrapping;gt.repeat.set(7,7);gt.colorSpace=THREE.SRGBColorSpace;
+    var floor=new THREE.Mesh(new THREE.PlaneGeometry(14,14),new THREE.MeshStandardMaterial({map:gt,roughness:.9}));floor.rotation.x=-Math.PI/2;o.add(floor);
+    var back=new THREE.Mesh(new THREE.PlaneGeometry(14,4.6),new THREE.MeshStandardMaterial({color:0x0e1c33,roughness:1}));back.position.set(0,2.3,-5);o.add(back);
+    [-1,1].forEach(function(s){var w=new THREE.Mesh(new THREE.PlaneGeometry(10,4.6),new THREE.MeshStandardMaterial({color:0x0c182b,roughness:1}));w.position.set(s*7,2.3,0);w.rotation.y=-s*Math.PI/2;o.add(w)});
+    var ceil=new THREE.Mesh(new THREE.PlaneGeometry(14,10),new THREE.MeshBasicMaterial({color:0x08111f}));ceil.rotation.x=Math.PI/2;ceil.position.y=4.6;o.add(ceil);
+    [-2.5,0,2.5].forEach(function(px){var s=new THREE.Mesh(new THREE.BoxGeometry(.12,.04,7),new THREE.MeshBasicMaterial({color:0x9fe9ee}));s.position.set(px*1.6,4.55,-1);o.add(s)});
+    // letrero
+    var sg=makePanel(5,.9,1024,184);var sx=sg.ctx;sx.font='800 150px '+DISP;sx.fillStyle='#2fd0c0';sx.textAlign='center';sx.fillText('HOMEFIT VR',512,150);sg.tex.needsUpdate=true;sg.mesh.position.set(0,3.3,-4.95);o.add(sg.mesh);
+    // tu zona de 2 x 2 m
+    var zone=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-1,.01,-1),new THREE.Vector3(1,.01,-1),new THREE.Vector3(1,.01,1),new THREE.Vector3(-1,.01,1)]),new THREE.LineBasicMaterial({color:0x2fd0c0}));o.add(zone);
+    var zf=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.MeshBasicMaterial({color:0x2fd0c0,transparent:true,opacity:.08}));zf.rotation.x=-Math.PI/2;zf.position.y=.005;o.add(zf);
+    // tapete del instructor y silla
+    var mt=new THREE.Mesh(new THREE.BoxGeometry(1.5,.02,2.1),mat(0x1f8a96));mt.position.set(0,.01,-2.5);o.add(mt);
+    var chair=new THREE.Group();var cm=mat(0x9a7b55);var seat=new THREE.Mesh(new THREE.BoxGeometry(.46,.04,.44),cm);seat.position.y=.45;chair.add(seat);
+    var bk=new THREE.Mesh(new THREE.BoxGeometry(.46,.5,.04),cm);bk.position.set(0,.72,-.2);chair.add(bk);
+    [[-.2,-.19],[.2,-.19],[-.2,.19],[.2,.19]].forEach(function(l){var lg=new THREE.Mesh(new THREE.BoxGeometry(.04,.45,.04),cm);lg.position.set(l[0],.225,l[1]);chair.add(lg)});
+    chair.position.set(-.85,0,-2.5);o.add(chair);this.chair=chair;
+    // avatar y paneles
+    this.av=buildAvatar();o.add(this.av.root);
+    this.hud=makePanel(1.7,.956,1024,576);this.hud.mesh.position.set(1.3,1.5,-2.2);this.hud.mesh.rotation.y=R(-24);o.add(this.hud.mesh);
+    this.coach=makePanel(1.2,.9,768,576);this.coach.mesh.position.set(-1.3,1.45,-2.2);this.coach.mesh.rotation.y=R(24);o.add(this.coach.mesh);
+    this.menu=makePanel(1.4,.875,1024,640);this.menu.mesh.position.set(0,1.3,-1.25);this.menu.mesh.visible=false;o.add(this.menu.mesh);
+    this.cursor=new THREE.Mesh(new THREE.SphereGeometry(.012,10,8),new THREE.MeshBasicMaterial({color:0xffffff}));this.cursor.visible=false;o.add(this.cursor);
+    this.rc=new THREE.Raycaster();this.o=new THREE.Vector3();this.d=new THREE.Vector3();this.q=new THREE.Quaternion();this.a=new THREE.Vector3();this.b=new THREE.Vector3();this.camEl=null;
+    sc.addEventListener('enter-vr',function(){S.inVR=true;M.dirty=true;beep(520,.05)});
+    sc.addEventListener('exit-vr',function(){S.inVR=false;M.dirty=true});
+    sc.addEventListener('renderstart',function(){self.setupXR()});
+    if(sc.renderer)this.setupXR();
+    window.HF={scene:sc,comp:this};
+    document.dispatchEvent(new Event('hf-ready'));
+  },
+  setupXR:function(){
+    if(this.xr||!this.el.renderer||!this.el.renderer.xr)return;this.xr=true;var self=this,o=this.el.object3D;this.ctl=[];
+    for(var i=0;i<2;i++){(function(i){
+      var c=self.el.renderer.xr.getController(i);c.visible=false;
+      c.add(new THREE.Mesh(new THREE.SphereGeometry(.035,14,12),mat(0x2fd0c0,{emissive:0x14867c})));
+      c.addEventListener('connected',function(){c.visible=true});c.addEventListener('disconnected',function(){c.visible=false});
+      var laser=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(0,0,-1.5)]),new THREE.LineBasicMaterial({color:0x2fd0c0}));laser.visible=false;c.add(laser);c.userData.laser=laser;
+      c.addEventListener('selectstart',function(){window.HFselectXR(c)});
+      o.add(c);self.ctl.push(c);
+    })(i)}
+  },
+  tick:function(time,dtms){
+    var dt=Math.min(dtms,100)/1000;S.t+=dt;var av=this.av,ex=null,pose,seg=curSeg();
+    this.chair.visible=S.cls.items.indexOf('silla')>-1;
+    if(S.state==='countdown'){S.cd-=dt;var n=Math.ceil(S.cd);if(n!==S.lastBeep&&n>0){S.lastBeep=n;beep(660)}
+      if(S.cd<=0){S.cd=0;S.state='running';S.i=0;S.segT=0;S.reps=0;S.repsSeg=0;S.repsByEx={};S.elapsed=0;S.startedAt=Date.now();S.stand=this.headY();S.sq='up';S.hs='down';beep(1040,.25);HFsync()}}
+    else if(S.state==='running'){
+      S.segT+=dt;S.elapsed+=dt;
+      var left=seg.dur-S.segT,l3=Math.ceil(left);if(left<=3&&left>0&&l3!==S.lastBeep){S.lastBeep=l3;beep(740,.08)}
+      if(S.segT>=seg.dur){S.i++;S.segT=0;S.repsSeg=0;S.sq='up';S.hs='down';S.lastBeep=-1;
+        if(S.i>=S.tl.length){S.state='done';beep(1200,.4);HFfinish()}else{beep(1040,.2);HFsync()}}
+      else this.track(curSeg());
+    }
+    seg=curSeg();
+    if(S.state==='running'||S.state==='paused'){ex=seg&&seg.ex?EX[seg.ex]:null;
+      if(ex)pose=poseAt(ex,S.segT).pose;else pose=idlePose(S.t);
+    }else if(S.state==='idle'){
+      var m=S.cls.main,k=Math.floor(S.t/6)%m.length;ex=EX[m[k]];S.preview=ex.name;pose=poseAt(ex,S.t%6).pose;
+    }else pose=idlePose(S.t);
+    this.updateMenu();
+    showProp(av,ex?ex.prop:null);applyPose(av,pose);
+    S.hudAcc+=dt;if(S.hudAcc>.1){S.hudAcc=0;drawMain(this.hud);drawCoach(this.coach)}
+    S.domAcc+=dt;if(S.domAcc>.5){S.domAcc=0;HFstatus()}
+  },
+  headY:function(){var cam=this.camEl||(this.camEl=document.querySelector('#cam'));if(!cam||!cam.object3D)return 1.6;cam.object3D.getWorldPosition(this.v);return this.v.y},
+  rayMenu:function(c){
+    c.getWorldPosition(this.o);c.getWorldQuaternion(this.q);this.d.set(0,0,-1).applyQuaternion(this.q);this.rc.set(this.o,this.d);this.rc.far=6;
+    var hit=this.rc.intersectObject(this.menu.mesh,false)[0];if(!hit||!hit.uv)return null;
+    return {id:M.pick(hit.uv.x*1024,(1-hit.uv.y)*640),dist:hit.distance,point:hit.point};
+  },
+  updateMenu:function(){
+    var show=S.inVR&&(S.state==='idle'||S.state==='paused'||S.state==='done');
+    if(show!==M.show){M.show=show;M.dirty=true}
+    this.menu.mesh.visible=show;var hov=null,cur=false,self=this;
+    if(this.ctl)this.ctl.forEach(function(c){var ln=c.userData.laser;if(!ln)return;ln.visible=show&&c.visible;c.userData.hover=null;
+      if(!show||!c.visible)return;var h=self.rayMenu(c);
+      if(h){ln.scale.z=h.dist/1.5;c.userData.hover=h.id;if(!cur){self.cursor.position.copy(h.point);cur=true}if(h.id&&!hov)hov=h.id}else ln.scale.z=1});
+    this.cursor.visible=cur;
+    if(hov!==M.hover){M.hover=hov;M.dirty=true}
+    if(show&&M.dirty){drawMenu(this.menu);M.dirty=false}
+  },
+  track:function(seg){
+    var ex=seg.ex?EX[seg.ex]:null;if(!ex||!ex.track)return;var head=this.headY();
+    if(ex.track==='squat'){var drop=S.stand-head;
+      if(S.sq==='up'&&drop>.25)S.sq='down';
+      else if(S.sq==='down'&&drop<.1){S.sq='up';HFaddRep()}
+      else if(S.sq==='up'&&drop<.08&&drop>-.2)S.stand+=(head-S.stand)*.01}
+    else if(ex.track==='hands'&&this.ctl&&this.ctl[0]&&this.ctl[0].visible&&this.ctl[1]&&this.ctl[1].visible){
+      this.ctl[0].getWorldPosition(this.a);this.ctl[1].getWorldPosition(this.b);var hy=Math.min(this.a.y,this.b.y);
+      if(S.hs==='down'&&hy>head){S.hs='up';HFaddRep()}else if(S.hs==='up'&&hy<head-.25)S.hs='down'}
+  }
+});
+
+/* ---------- Interfaz de la página ---------- */
+function HFaddRep(){
+  var seg=curSeg();if(S.state!=='running'||!seg||!seg.ex)return;
+  S.reps++;S.repsSeg++;S.repsByEx[seg.ex]=(S.repsByEx[seg.ex]||0)+1;beep(980,.05);
+}
+window.HFaddRep=HFaddRep;
+function setClass(id){
+  S.cls=CLASSES.filter(function(c){return c.id===id})[0];
+  S.tl=buildTimeline(S.cls,S.demo);S.total=S.tl.reduce(function(a,s){return a+s.dur},0);
+  var ul=$('#itemList');ul.innerHTML='';
+  if(!S.cls.items.length){var li=document.createElement('li');li.innerHTML='<b>Solo tu cuerpo</b><small>Calzado cerrado y, si tienes, un tapete antideslizante.</small>';ul.appendChild(li)}
+  S.cls.items.forEach(function(k){var li=document.createElement('li');var b=document.createElement('b');b.textContent=ITEMS[k].name;var s=document.createElement('small');s.textContent=ITEMS[k].how;li.appendChild(b);li.appendChild(s);ul.appendChild(li)});
+  resetClass();
+}
+function resetClass(){
+  S.state='idle';S.i=0;S.segT=0;S.elapsed=0;S.reps=0;S.repsSeg=0;S.tl=buildTimeline(S.cls,S.demo);S.total=S.tl.reduce(function(a,s){return a+s.dur},0);
+  $('#summary').hidden=true;HFsync();
+}
+function renderClasses(){
+  var box=$('#classList');box.innerHTML='';
+  CLASSES.forEach(function(c,i){
+    var id='cls-'+c.id,inp=document.createElement('input');inp.type='radio';inp.name='cls';inp.id=id;inp.value=c.id;if(i===0)inp.checked=true;
+    var lb=document.createElement('label');lb.htmlFor=id;
+    var tl=buildTimeline(c,false),tot=tl.reduce(function(a,s){return a+s.dur},0);
+    lb.innerHTML='<b></b><span></span>';lb.firstChild.textContent=c.name;lb.lastChild.textContent=c.focus+' · ≈ '+Math.round(tot/60)+' min · '+c.level;
+    inp.addEventListener('change',function(){setClass(c.id)});
+    var w=document.createElement('div');w.className='opt';w.appendChild(inp);w.appendChild(lb);box.appendChild(w);
+  });
+}
+function safeOK(){return Array.prototype.every.call(document.querySelectorAll('#safety input'),function(i){return i.checked})}
+function HFsync(){
+  S.safe=safeOK();M.dirty=true;
+  var run=S.state==='running',pa=S.state==='paused',idle=S.state==='idle',done=S.state==='done';
+  $('#btnStart').disabled=!(S.safe&&(idle||done));$('#btnStart').textContent=done?'Repetir clase':'Iniciar clase';
+  $('#btnPause').disabled=!(run||pa);$('#btnPause').textContent=pa?'Reanudar':'Pausar';
+  $('#btnRep').disabled=!run;HFstatus();
+}
+function HFstatus(){
+  var el=$('#status'),seg=curSeg(),t='';
+  if(S.state==='idle')t=S.safe?'<b>Listo.</b> Duración de la clase: '+fmt(S.total)+'.':'Confirma la lista de seguridad para empezar.';
+  else if(S.state==='countdown')t='<b>Comienza en '+Math.ceil(S.cd)+'</b>. Párate recto y mira al frente.';
+  else if(S.state==='done')t='<b>Clase completa.</b> '+fmt(S.elapsed)+' · '+S.reps+' repeticiones contadas.';
+  else if(seg){var n=seg.ex?EX[seg.ex].name:'Descanso';t='<b>'+PHASE[seg.type][0].toLowerCase()+'</b> · '+n+' · quedan '+fmt(seg.dur-S.segT)+(S.state==='paused'?' · en pausa':'');}
+  el.innerHTML=t;
+}
+function HFstart(){
+  if(!S.safe)return;beep(500,.05);
+  S.demo=$('#demo').checked;S.tl=buildTimeline(S.cls,S.demo);S.total=S.tl.reduce(function(a,s){return a+s.dur},0);
+  S.i=0;S.segT=0;S.elapsed=0;S.reps=0;S.repsSeg=0;S.repsByEx={};S.cd=5;S.lastBeep=-1;S.state='countdown';$('#summary').hidden=true;HFsync();
+}
+function HFpause(){
+  if(S.state==='running')S.state='paused';else if(S.state==='paused')S.state='running';HFsync();
+}
+window.HFselect=function(){
+  if(S.state==='idle'||S.state==='done'){HFstart()}else if(S.state==='running'||S.state==='paused'){HFpause()}
+};
+function daysSince(a){if(!a.length)return null;var last=Math.max.apply(null,a.map(function(s){return s.ts}));return Math.floor((Date.now()-last)/864e5)}
+function renderProgress(){
+  var a=store().filter(function(s){return !s.demo}),wk=a.filter(function(s){return Date.now()-s.ts<7*864e5}),d=daysSince(a);
+  var risk=d===null?['Sin datos','']:d>=5?['Alto','warn']:d>=3?['Medio','warn']:['Bajo','ok'];
+  var done={};a.forEach(function(s){done[s.classId]=Math.max(done[s.classId]||0,s.ts)});
+  var rec=CLASSES.slice().sort(function(x,y){return (done[x.id]||0)-(done[y.id]||0)})[0];
+  var rows=[['Sesiones esta semana',wk.length+' de 3'],['Adherencia semanal',Math.min(100,Math.round(wk.length/3*100))+' %'],['Días sin entrenar',d===null?'—':String(d)],
+    ['Riesgo de abandono','<span class="pill '+risk[1]+'">'+risk[0]+'</span>'],['Clase sugerida',rec.name]];
+  $('#progress').innerHTML=rows.map(function(r){return '<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>'}).join('');
+}
+function saveSession(rpe){var a=store();a.push({ts:Date.now(),classId:S.cls.id,dur:Math.round(S.elapsed),reps:S.reps,rpe:rpe,demo:S.demo});save(a);renderProgress();$('#summary').hidden=true;S.state='idle';HFsync()}
+function HFfinish(){
+  M.borg=13;HFsync();var box=$('#summary');box.hidden=false;
+  var byEx=Object.keys(S.repsByEx).map(function(k){return EX[k].name+': '+S.repsByEx[k]}).join(' · ')||'Sin repeticiones contadas por sensores.';
+  box.innerHTML='<div class="box"><h3>Clase completa</h3><div>'+fmt(S.elapsed)+' · '+S.reps+' repeticiones contadas</div><div style="font-size:13px;color:#93A3BA"></div>'
+   +'<label for="borg">Esfuerzo percibido (escala de Borg 6 a 20): <b class="borg" id="borgV">13</b></label>'
+   +'<input type="range" id="borg" min="6" max="20" value="13"><div style="font-size:13px;color:#93A3BA">6 muy, muy suave · 13 algo duro · 20 máximo esfuerzo</div>'
+   +'<button id="saveS">Guardar sesión</button></div>';
+  box.querySelector('div div:nth-child(3)').textContent=byEx;
+  var r=$('#borg');r.addEventListener('input',function(){$('#borgV').textContent=r.value});
+  $('#saveS').addEventListener('click',function(){saveSession(+r.value)});
+}
+window.HFsync=HFsync;window.HFstatus=HFstatus;window.HFfinish=HFfinish;
+
+renderClasses();setClass('fuerza');renderProgress();
+document.querySelectorAll('#safety input').forEach(function(i){i.addEventListener('change',HFsync)});
+$('#demo').addEventListener('change',function(){if(S.state==='idle'||S.state==='done'){S.demo=this.checked;resetClass()}});
+$('#btnStart').addEventListener('click',HFstart);
+$('#btnPause').addEventListener('click',HFpause);
+$('#btnRep').addEventListener('click',HFaddRep);
+document.addEventListener('keydown',function(e){if(e.code==='Space'&&S.state==='running'&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='INPUT'){e.preventDefault();HFaddRep()}});
+$('#btnVR').addEventListener('click',function(){var sc=$('#scene');if(sc.enterVR)sc.enterVR()});
+if(/OculusBrowser|Quest/i.test(navigator.userAgent))$('#questTip').classList.add('on');
+window.__HF={S:S,M:M,act:act,drawMenu:drawMenu};
+try{if(navigator.xr&&navigator.xr.isSessionSupported){navigator.xr.isSessionSupported('immersive-vr').then(function(ok){if(ok)$('#btnVR').hidden=false}).catch(function(){})}}catch(e){}
+})();
+</script>
+<script>if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(function(){})}</script>
+</body>
+</html>
